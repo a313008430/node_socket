@@ -20,10 +20,12 @@ const ServerAction = {
     flop: 'flop',
     /**移动 */
     move: 'move',
+    /**游戏开始 */
+    start: 'start',
     /**推送结果 */
     result: 'result',
     /**其它用户进入房间 */
-    user_enter:'user_enter',
+    user_enter: 'user_enter',
     /**用户中途离开房间 */
     leave_room: 'leave_room',
     /**用户正常离开房间 */

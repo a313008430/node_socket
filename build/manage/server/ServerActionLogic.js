@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const SystemData_1 = require("../../data/SystemData");
 /**事件行为 */
 const NetEvent_1 = require("../../net/NetEvent");
 /**用户 */
 const UserData_1 = require("../../data/UserData");
-/**房间逻辑 */
-const RoomData_1 = require("../../data/RoomData");
+/**socket 数据 */
+const SocketData_1 = require("../../data/SocketData");
 /**
  * 服务端行为事件处理返回
  */
@@ -24,7 +25,7 @@ class ServerActionLogic {
      */
     sendAction(action, data) {
         switch (action) {
-            case NetEvent_1.ServerAction.enter_room: //进入房间
+            case NetEvent_1.ServerAction.enter_room://进入房间
                 this.onEnterRoom(data);
                 break;
         }
@@ -34,41 +35,52 @@ class ServerActionLogic {
      * @param id 用户id
      */
     onEnterRoom(id) {
-        let user = UserData_1.UserData.instance.getUerObjByUserId(id);
-        // console.log(user)
-        if (user) { //向当前 用户发送信息
-            let room = RoomData_1.RoomData.instance.getRoomByRoomId(user['user']['base']['room_id']);
-            console.log(room);
-            let data = {
-                action: NetEvent_1.ServerAction.enter_room,
-                data: {
-                    room_info: room['room_info'],
-                    user_list: room['user_list']
-                },
-                error_code: 0
-            };
-            console.log('%c ==> ', 'color:red;background-color:rgba(167, 167, 167, 0.2)', data);
-            user['socket'].send(JSON.stringify(data));
-            //临时写法获取房间里面当前 加入房间的用户信息 ============================
-            let roomUser;
-            for (let x = 0, l = room['user_list'].length; x < l; x++) {
-                if (room['user_list'][x]['base']['user_id'] == id) {
-                    roomUser = room['user_list'][x];
-                }
-            }
-            //如果房间内已经有其它人，则向其它人推送有人进入房间
-            for (let x = 0, l = room['user_list'].length; x < l; x++) {
-                if (room['user_list'][x]['base']['user_id'] != id) {
+        console.log(id);
+        let userBase = {}, users = UserData_1.UserData.instance.getUerList(), ws;
+        for (let x = 0, l = users.length; x < l; x++) {
+            ws = SocketData_1.SocketData.instance.getSocketById(users[x]['id']);
+            if (users[x]['id'] == id) {
+                if (ws) {
+                    userBase['ai'] = 0;
+                    userBase['avatar_url'] = users[x]['avatar_url'];
+                    userBase['mark'] = SystemData_1.SystemData.user_mark_1;
+                    userBase['room_id'] = 12312;
+                    userBase['game_history_id'] = 12312;
+                    userBase['sex'] = users[x]['sex'];
+                    userBase['user_id'] = users[x]['id'];
+                    userBase['user_name'] = users[x]['nickname'];
                     let data = {
-                        action: NetEvent_1.ServerAction.user_enter,
-                        data: roomUser,
+                        action: NetEvent_1.ServerAction.enter_room,
+                        data: {
+                            room_info: { room_id: 12312 },
+                            user_list: [{ base: userBase, is_play: 1 }]
+                        },
                         error_code: 0
                     };
-                    console.log('%c ==> ', 'color:red;background-color:rgba(167, 167, 167, 0.2)', data);
-                    UserData_1.UserData.instance.getUerObjByUserId(room['user_list'][x]['base']['user_id'])['socket'].send(JSON.stringify(data));
+                    ws.send(JSON.stringify(data));
+                }
+            }
+            else {
+                if (ws) {
+                    let userObj = UserData_1.UserData.instance.getUerObjByUserId(id);
+                    userBase['ai'] = 0;
+                    userBase['avatar_url'] = userObj['avatar_url'];
+                    userBase['mark'] = SystemData_1.SystemData.user_mark_1;
+                    userBase['room_id'] = 12312;
+                    userBase['game_history_id'] = 12312;
+                    userBase['sex'] = userObj['sex'];
+                    userBase['user_id'] = userObj['id'];
+                    userBase['user_name'] = userObj['nickname'];
+                    let data = {
+                        action: NetEvent_1.ServerAction.user_enter,
+                        data: { base: userBase },
+                        error_code: 0
+                    };
+                    ws.send(JSON.stringify(data));
                 }
             }
         }
+        console.log(UserData_1.UserData.instance.getUerList());
     }
 }
 exports.ServerActionLogic = ServerActionLogic;

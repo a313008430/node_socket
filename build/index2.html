@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>socket</title>
+</head>
+
+<body>
+    <div>hello wold!</div>
+    <input id="messageInput" type="text" name="" id="">
+    <input id="sendBtn" type="button" value="提交">
+    <script>
+        // let wsServer = new WebSocket('ws://192.168.3.2:3001?game_code=violence&request_root=http%3A%2F%2Ftest.momoyuedu.cn%2F&sid=31438sb40f33ea82c191633b00beff88794b4712&game_history_id=5906&code=yuewan&ws_domain=ws://192.168.3.2:3001'),
+        let wsServer = new WebSocket('ws://192.168.3.2:3001?game_code=violence&request_root=http%3A%2F%2Ftest.momoyuedu.cn%2F&sid=90075s4d41fc515dff91c21a099a25107c2a9106&game_history_id=5906&code=yuewan&ws_domain=ws://192.168.3.2:3001'),
+            sendBtn = document.querySelector('#sendBtn'),
+            messageInput = document.querySelector('#messageInput');
+
+        sendBtn.addEventListener('click', () => {
+            wsServer.send(messageInput.value);
+        });
+
+        wsServer.onopen = function (d) {
+            console.log(d)
+        }
+        wsServer.onmessage = function (d) {
+            console.log(d)
+        }
+        wsServer.onerror = function (d) {
+            console.error(d)
+        }
+        wsServer.onclose = function (d) {
+            console.error(d)
+        }
+    </script>
+</body>
+
+</html>

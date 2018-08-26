@@ -4,6 +4,8 @@ import { SystemData } from "./SystemData";
 import { ServerActionLogic } from '../manage/server/ServerActionLogic';
 /**事件行为 */
 import { ServerAction } from '../net/NetEvent';
+/**redis  */
+import { RedisCore } from '../core/RedisCore';
 
 
 /**用户基础信息 */
@@ -63,6 +65,47 @@ class UserData {
 
     }
 
+    /**设置用户列表 => redis */
+    public setUsers(users: any[]): void {
+        this.users = users;
+    }
+
+    /**
+     * 缓存数据到redis
+     */
+    public cacheUser(obj: any): void {
+        this.users.push(obj);
+        this.sendEnterRoom(obj['id']);
+        this.setSync();
+    }
+
+    /**
+     * 更新缓存数据
+     */
+    public updateCacheUser(id: any): void {
+        let user = this.getUerObjByUserId(id);
+        if (user) {
+            //加入需要更新的数据
+            this.sendEnterRoom(id);
+            this.setSync();
+        }
+    }
+
+    /**
+     * 广播进入房间信息
+     * @param id 用户id 
+     */
+    private sendEnterRoom(id: any): void {
+        ServerActionLogic.instance.sendAction(ServerAction.enter_room, id);
+    }
+
+    /**
+     * 同步数据到redis
+     */
+    public setSync(): void {
+        RedisCore.instance.setData('users', JSON.stringify(this.users));
+    }
+
     /**
      * 添加用户 并且 加入房间
      * @param d 用户数据
@@ -106,12 +149,12 @@ class UserData {
                 room['user_list'].push(userData);
             } else {//如果房间不存在
                 //加入到房间缓存 
-                RoomData.instance.addRoom({
-                    user_list: [userData],
-                    room_info: {
-                        room_id: d['game_history_id']
-                    }
-                })
+                // RoomData.instance.addRoom({
+                //     user_list: [userData],
+                //     room_info: {
+                //         room_id: d['game_history_id']
+                //     }
+                // })
             }
         }
 
@@ -153,7 +196,7 @@ class UserData {
     public getUerObjByUserId(id: any): any {
         let list = this.users;
         for (let x = 0, l = list.length; x < l; x++) {
-            if (list[x]['user']['base']['user_id'] == id) return list[x];
+            if (list[x]['id'] == id) return list[x];
         }
         return null;
     }
@@ -172,7 +215,7 @@ class UserData {
      * 获取所有用户列表
      */
     public getUerList(): any[] {
-        return [];
+        return this.users;
     }
 
 

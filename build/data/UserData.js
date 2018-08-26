@@ -5,6 +5,8 @@ const SystemData_1 = require("./SystemData");
 const ServerActionLogic_1 = require("../manage/server/ServerActionLogic");
 /**事件行为 */
 const NetEvent_1 = require("../net/NetEvent");
+/**redis  */
+const RedisCore_1 = require("../core/RedisCore");
 /**
  * 用户数据模块
  */
@@ -20,6 +22,42 @@ class UserData {
         }
         return this._instance;
     }
+    /**设置用户列表 => redis */
+    setUsers(users) {
+        this.users = users;
+    }
+    /**
+     * 缓存数据到redis
+     */
+    cacheUser(obj) {
+        this.users.push(obj);
+        this.sendEnterRoom(obj['id']);
+        this.setSync();
+    }
+    /**
+     * 更新缓存数据
+     */
+    updateCacheUser(id) {
+        let user = this.getUerObjByUserId(id);
+        if (user) {
+            //加入需要更新的数据
+            this.sendEnterRoom(id);
+            this.setSync();
+        }
+    }
+    /**
+     * 广播进入房间信息
+     * @param id 用户id
+     */
+    sendEnterRoom(id) {
+        ServerActionLogic_1.ServerActionLogic.instance.sendAction(NetEvent_1.ServerAction.enter_room, id);
+    }
+    /**
+     * 同步数据到redis
+     */
+    setSync() {
+        RedisCore_1.RedisCore.instance.setData('users', JSON.stringify(this.users));
+    }
     /**
      * 添加用户 并且 加入房间
      * @param d 用户数据
@@ -30,7 +68,7 @@ class UserData {
         let baseObj = {}, 
         //获取已有用户
         user = this.getUerObjByUserId(d['userData']['id']), room = RoomData_1.RoomData.instance.getRoomByRoomId(d['game_history_id']);
-        if (user) { //如果用户存在
+        if (user) {
             if (room) {
                 //如果之前有socket就先断开
                 if (user['socket'])
@@ -38,7 +76,7 @@ class UserData {
                 user['socket'] = ws;
             }
         }
-        else { //如果用户不存在
+        else {
             baseObj.ai = 0; //临时处理
             baseObj.avatar_url = d['userData']['avatar_url'];
             baseObj.game_history_id = d['game_history_id'];
@@ -57,18 +95,18 @@ class UserData {
                 socket: ws
             };
             this.users.push(serverUserData);
-            if (room) { //如果房间存在
+            if (room) {
                 console.error(room);
                 room['user_list'].push(userData);
             }
-            else { //如果房间不存在
+            else {
                 //加入到房间缓存 
-                RoomData_1.RoomData.instance.addRoom({
-                    user_list: [userData],
-                    room_info: {
-                        room_id: d['game_history_id']
-                    }
-                });
+                // RoomData.instance.addRoom({
+                //     user_list: [userData],
+                //     room_info: {
+                //         room_id: d['game_history_id']
+                //     }
+                // })
             }
         }
         //给当前用户广播进入房间
@@ -101,7 +139,7 @@ class UserData {
     getUerObjByUserId(id) {
         let list = this.users;
         for (let x = 0, l = list.length; x < l; x++) {
-            if (list[x]['user']['base']['user_id'] == id)
+            if (list[x]['id'] == id)
                 return list[x];
         }
         return null;
@@ -120,7 +158,7 @@ class UserData {
      * 获取所有用户列表
      */
     getUerList() {
-        return [];
+        return this.users;
     }
 }
 exports.UserData = UserData;
